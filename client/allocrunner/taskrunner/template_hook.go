@@ -16,6 +16,7 @@ import (
 	cstructs "github.com/hashicorp/nomad/client/structs"
 	"github.com/hashicorp/nomad/client/taskenv"
 	"github.com/hashicorp/nomad/nomad/structs"
+	sconfig "github.com/hashicorp/nomad/nomad/structs/config"
 )
 
 const (
@@ -78,6 +79,8 @@ type templateHook struct {
 
 	// vaultNamespace is the current Vault namespace
 	vaultNamespace string
+
+	vaultConfig *sconfig.VaultConfig
 
 	// nomadToken is the current Nomad token
 	nomadToken string
@@ -142,8 +145,9 @@ func (h *templateHook) Prestart(ctx context.Context, req *interfaces.TaskPrestar
 		}
 	}
 
-	// Set vault namespace if specified
+	// Set vault namespace and configuration if specified
 	if req.Task.Vault != nil {
+		h.vaultConfig = h.config.clientConfig.GetVaultConfigs(h.logger)[req.Task.Vault.Cluster]
 		h.vaultNamespace = req.Task.Vault.Namespace
 	}
 
@@ -194,6 +198,7 @@ func (h *templateHook) newManager() (unblock chan struct{}, err error) {
 		ConsulToken:          h.consulToken,
 		VaultToken:           h.vaultToken,
 		VaultNamespace:       h.vaultNamespace,
+		VaultConfig:          h.vaultConfig,
 		TaskDir:              h.taskDir,
 		EnvBuilder:           h.config.envBuilder,
 		MaxTemplateEventRate: template.DefaultMaxTemplateEventRate,
