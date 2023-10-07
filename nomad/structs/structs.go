@@ -11360,6 +11360,9 @@ type IdentityClaims struct {
 //
 // ID claim is random (nondeterministic) so multiple calls with the same values
 // will not return equal claims by design. JWT IDs should never collide.
+//
+// Issuer is configurable and therefore set when the claims are signed by the
+// issuer.
 func NewIdentityClaims(job *Job, alloc *Allocation, taskName string, wid *WorkloadIdentity, now time.Time) *IdentityClaims {
 
 	tg := job.LookupTaskGroup(alloc.TaskGroup)
