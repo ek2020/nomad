@@ -394,7 +394,7 @@ func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time
 			untainted[alloc.ID] = alloc
 		}
 
-		if isUntainted || ignore {
+		if ignore {
 			continue
 		}
 
@@ -403,7 +403,7 @@ func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time
 		// add it to the untainted set. Disconnecting delay evals are
 		// handled by allocReconciler.createTimeoutLaterEvals
 		eligibleNow, eligibleLater, rescheduleTime = updateByReschedulable(alloc, now, evalID, deployment, isDisconnecting)
-		if !isDisconnecting && !eligibleNow {
+		if !eligibleNow {
 			untainted[alloc.ID] = alloc
 			if eligibleLater {
 				rescheduleLater = append(rescheduleLater, &delayedRescheduleInfo{alloc.ID, alloc, rescheduleTime})
@@ -489,6 +489,7 @@ func updateByReschedulable(alloc *structs.Allocation, now time.Time, evalID stri
 		rescheduleNow = true
 		return
 	}
+
 	if eligible && alloc.FollowupEvalID == "" {
 		rescheduleLater = true
 	}
