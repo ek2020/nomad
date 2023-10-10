@@ -366,9 +366,10 @@ func (a allocSet) filterByTainted(taintedNodes map[string]*structs.Node, serverS
 // untainted or a set of allocations that must be rescheduled now. Allocations that can be rescheduled
 // at a future time are also returned so that we can create follow up evaluations for them. Allocs are
 // skipped or considered untainted according to logic defined in shouldFilter method.
-func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time.Time, evalID string, deployment *structs.Deployment) (untainted, rescheduleNow allocSet, rescheduleLater []*delayedRescheduleInfo) {
-	untainted = make(map[string]*structs.Allocation)
-	rescheduleNow = make(map[string]*structs.Allocation)
+func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time.Time, evalID string, deployment *structs.Deployment) (allocSet, allocSet, []*delayedRescheduleInfo) {
+	untainted := make(map[string]*structs.Allocation)
+	rescheduleNow := make(map[string]*structs.Allocation)
+	rescheduleLater := []*delayedRescheduleInfo{}
 
 	// When filtering disconnected sets, the untainted set is never populated.
 	// It has no purpose in that context.
@@ -390,7 +391,7 @@ func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time
 		}
 
 		isUntainted, ignore := shouldFilter(alloc, isBatch)
-		if isUntainted && !isDisconnecting {
+		if isUntainted {
 			untainted[alloc.ID] = alloc
 		}
 
@@ -398,13 +399,10 @@ func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time
 			continue
 		}
 
-		// Only failed allocs with desired state run get to this point
-		// If the failed alloc is not eligible for rescheduling now we
-		// add it to the untainted set. Disconnecting delay evals are
+		// Disconnecting delay evals are
 		// handled by allocReconciler.createTimeoutLaterEvals
 		eligibleNow, eligibleLater, rescheduleTime = updateByReschedulable(alloc, now, evalID, deployment, isDisconnecting)
 		if !eligibleNow {
-			untainted[alloc.ID] = alloc
 			if eligibleLater {
 				rescheduleLater = append(rescheduleLater, &delayedRescheduleInfo{alloc.ID, alloc, rescheduleTime})
 			}
@@ -412,7 +410,7 @@ func (a allocSet) filterByRescheduleable(isBatch, isDisconnecting bool, now time
 			rescheduleNow[alloc.ID] = alloc
 		}
 	}
-	return
+	return untainted, rescheduleNow, rescheduleLater
 }
 
 // shouldFilter returns whether the alloc should be ignored or considered untainted.
