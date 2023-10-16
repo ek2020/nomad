@@ -75,6 +75,7 @@ func (h *consulHook) Prerun() error {
 		if err := h.prepareConsulTokensForServices(task.Services, tokens, tg); err != nil {
 			mErr.Errors = append(mErr.Errors, err)
 		}
+		if err := h.prepareConsulTokensForTask(task, tokens); err != nil {
 		if err := h.prepareConsulTokensForTask(job, task, tg, tokens); err != nil {
 			mErr.Errors = append(mErr.Errors, err)
 		}
